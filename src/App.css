@@ -36,3 +36,25 @@
     transform: rotate(360deg);
   }
 }
+
+.data-cubes {
+  display: flex;
+  flex-wrap: wrap; /* Allow wrapping for responsive layout */
+  gap: 20px; /* Space between cubes */
+  justify-content: center; /* Center cubes in the container */
+}
+
+.data-cube {
+  background-color: #f0f0f0; /* Light grey background */
+  border: 1px solid #ccc; /* Border for cube */
+  border-radius: 8px; /* Rounded corners */
+  padding: 16px; /* Inner padding */
+  width: 200px; /* Fixed width for each cube */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Slight shadow */
+  transition: transform 0.2s; /* Transition effect */
+}
+
+.data-cube:hover {
+  transform: scale(1.05); /* Scale up on hover */
+}
+
