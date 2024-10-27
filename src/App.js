@@ -1,24 +1,46 @@
 import React, {useState, useEffect, useMemo, useRef} from 'react'
-import { Card, CardContent, CardHeader, Typography, IconButton, Collapse, Divider } from '@mui/material';
-import { OpenWith, ExpandMore, ExpandLess } from "@mui/icons-material";
+import { Card, CardContent, CardHeader, Typography, IconButton, Collapse, Divider, Input } from '@mui/material';
+import { OpenWith, ExpandMore, ExpandLess, Add } from "@mui/icons-material";
 //import Add from "@mui/icons-material/Add";
 import { lightGreen } from '@mui/material/colors';
 import { styled } from '@mui/material/styles';
 import Draggable from 'react-draggable';
 import { Space, NoPanArea } from 'react-zoomable-ui';
+import { ContextMenu } from 'primereact/contextmenu';
+import 'primereact/resources/themes/saga-blue/theme.css';
+import { debounce } from 'lodash';
+
 
 const maxWidthCards = 300;
-//var x=0; var y=0;
+//const maxHeightCards = 300;
 
 // Cards
 function CardNode(data) {
   const label = data.label
   const active = data.active
   const isActive = data.isActive
+  const index = data.index
+  const xPos = (maxWidthCards+15) * index
+  //const yPos = maxHeightCards * index
+  var inputRef = ''
+
+  const handleButtonClick = () => {
+    if(inputRef.value !== ''){
+      data.handleAddItem(inputRef.value, data.parentDict, label)
+      inputRef.value = ''
+    }
+  };
+
+  const onRightClick = (event, id) => {
+    data.contextRef.current.show(event)
+    data.contextSetDeleteParameters(id,data.parentDict,label)
+  };
+
+  
 
   return (
     <div key={label} style={{zIndex:1}}>
-      <Draggable handle=".handle" nodeRef={data.dragRef}>
+      <Draggable handle=".handle" nodeRef={data.dragRef} defaultPosition={{x: xPos, y: 0}}>
       <Card sx={{ maxWidth: maxWidthCards, bgcolor: lightGreen[600], position:'absolute'}}>
         <CardHeader
           action={
@@ -31,13 +53,35 @@ function CardNode(data) {
               </StyledIconButton>
             </div>
           }
-          titleTypographyProps={{variant:"h1",color: 'white',fontSize: '1.5rem'}}
+          titleTypographyProps={{variant:"h1",color: 'white',fontSize: '1.5rem', marginRight:'10px'}}
           title={label}
         >
         </CardHeader>
         <Divider/>
         <Collapse in={isActive} timeout="auto" unmountOnExit>
-          {CardArray(active)}
+
+
+          <CardContent sx={{bgcolor: lightGreen[500],padding: '8px'}}>
+            <Typography variant="body1" component={'span'} gutterBottom={false} sx={{ color: 'white', fontSize: '1.2rem', fontWeight: '400'}}>
+              {active.map((activity,index) =>(
+                <div key={index}>
+                  <div onContextMenu={(event) => onRightClick(event, index)}>
+                    {activity}
+                  </div>
+                  <Divider sx={{ margin:0.5 }}/>
+                </div>
+              ))}
+
+              <div>
+                <StyledIconButton size="small" sx={{marginTop:'5px', marginRight:'10px'}} onClick={handleButtonClick}>
+                  <Add />
+                </StyledIconButton>
+                <Input label="Outlined" variant="outlined" sx={{color:'white'}} inputRef={(input) => (inputRef = input)}/>
+              </div>
+            </Typography>
+          </CardContent>
+
+
         </Collapse>
       </Card>
       </Draggable>
@@ -45,20 +89,6 @@ function CardNode(data) {
   );
 };
 
-function CardArray(activities) {
-  return (
-    <CardContent sx={{bgcolor: lightGreen[500],padding: '8px'}}>
-      <Typography variant="body1" component={'span'} gutterBottom={false} sx={{ color: 'white', fontSize: '1.2rem', fontWeight: '400'}}>
-        {activities.map((activity,index) =>(
-          <div key={index}>
-            {activity}
-            <Divider sx={{ margin:0.5 }}/>
-          </div>
-        ))}
-      </Typography>
-    </CardContent>
-  );
-}
 
 function App() {
 
@@ -66,7 +96,9 @@ function App() {
   const [loading, setLoading] = useState(true); // Set loading
   const [openCards, setOpenCards] = useState([]); // Array to store open card IDs
   const dragRef = useRef(null)
-  
+  const contextRef = useRef(null)
+  const contextItems = [{label: 'Remove', command: () => handleRemoveItem()}]
+  const [contextHandle, setContextHandle] = useState()
 
   // Load JSON file
   useEffect (() => {
@@ -90,17 +122,47 @@ function App() {
       prev.includes(id) ? prev.filter((cardId) => cardId !== id) : [...prev, id]
     );
   };
+
+  const contextSetDeleteParameters = (id, parent,label) => {
+    setContextHandle({id: id, parent:parent, label:label})
+  };
+
+  // Handle button click to update the data, Add input
+  const handleAddItem = (textInput, parent, label) => {
+    setData(data => ({
+      ...data, 
+      [parent]: {
+        ...data[parent], 
+        [label]: [
+          ...data[parent][label], textInput
+        ]
+      } 
+    }))
+  };
+
+  // Handle button click to update the data, Remove input
+  const handleRemoveItem = debounce(() => { //debounce to prevent double deletion with a 100 ms delay, using contextHandle 
+    setData(data => ({
+      ...data, 
+      [contextHandle.parent]: {
+        ...data[contextHandle.parent], 
+        [contextHandle.label]: [...data[contextHandle.parent][contextHandle.label]].filter((_,index) => index !== contextHandle.id)      
+      }
+    }))
+  },100);
   
 
   // Transform data into nodes for flow and use useMemo which only recreates nodes if activities changes
   const allCards = useMemo(() => { 
     if(data === undefined) return []
     
+    var parentDict = "activities_gear_dictionary"
     // Get activities dictionary
-    const activities = Object.entries(data.activities_gear_dictionary);
+    const activities = Object.entries(data[parentDict]);
+    console.log(data[parentDict]["Dayhikes"])
   
-    return activities.map(([name,activity]) => (
-      CardNode({ label: name, active: activity, isActive : openCards.includes(name), toggleCard, dragRef })
+    return activities.map(([name,activity], index) => (
+      CardNode({ label: name, active: activity, isActive : openCards.includes(name), toggleCard, dragRef, index, contextSetDeleteParameters, parentDict, contextRef, handleAddItem})
     ));
   },[data, openCards]); 
 
@@ -114,8 +176,9 @@ function App() {
     <Space>
     <NoPanArea>
     <Draggable handle=".bHandle">
-        <div style={{ width: '100vw', height: '100vh' }}>
-          <div className="bHandle" style={{position: 'absolute', cursor: 'grab', zIndex: 0, top: 0, left: 0, right: 0, bottom: 0}}></div>
+        <div>
+          <div className="bHandle" style={{position: 'absolute', cursor: 'grab', zIndex: 0, width:'100%', height:'100%'}}></div>
+          <ContextMenu model={contextItems} ref={contextRef} breakpoint="767px"/>
           {allCards}
         </div>
     </Draggable>
