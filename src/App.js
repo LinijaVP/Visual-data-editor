@@ -19,8 +19,7 @@ function CardNode(data) {
   const label = data.label
   const active = data.active
   const isActive = data.isActive
-  const index = data.index
-  const xPos = (maxWidthCards+15) * index
+  const xPos = (maxWidthCards+15) * data.index + data.offset
   //const yPos = maxHeightCards * index
   var inputRef = ''
 
@@ -40,7 +39,7 @@ function CardNode(data) {
 
   return (
     <div key={label} style={{zIndex:1}}>
-      <Draggable handle=".handle" nodeRef={data.dragRef} defaultPosition={{x: xPos, y: 0}}>
+      <Draggable handle=".handle" nodeRef={data.dragRef} defaultPosition={{x: xPos, y: 500}}>
       <Card sx={{ maxWidth: maxWidthCards, bgcolor: lightGreen[600], position:'absolute'}}>
         <CardHeader
           action={
@@ -89,6 +88,68 @@ function CardNode(data) {
   );
 };
 
+function CardNodeNumbers(data){
+  const label = data.label;
+  const isActive = data.isActive;
+  const offSetLocal = Math.floor(data.cardsNumber/2)* (maxWidthCards+15)
+  return(
+    <div key={label} style={{zIndex:1}}>
+    <Draggable handle=".handle" nodeRef={data.dragRef} defaultPosition={{x: data.offset + offSetLocal, y: 0}}>
+      <Card sx={{ maxWidth: maxWidthCards, bgcolor: lightGreen[600], position:'absolute'}}>
+        <CardHeader
+          action={
+            <div>
+              <StyledIconButton size="small">
+                {isActive ? <ExpandLess /> : <ExpandMore />}
+              </StyledIconButton>
+              <StyledIconButton size="small" className="handle" ref={data.dragRef} style={{cursor:'grab'}}>
+                <OpenWith />
+              </StyledIconButton>
+            </div>
+          }
+          titleTypographyProps={{variant:"h1",color: 'white',fontSize: '1.5rem', marginRight:'10px'}}
+          title={label}
+        >
+        </CardHeader>
+      </Card>
+    </Draggable>
+    </div>
+  );
+}
+
+function CardParents(data){
+  const label = data.label;
+  const isActive = data.isActive;
+  const offSetLocal = Math.floor(data.cardsNumber/2)* maxWidthCards
+  return(
+    <div key={label} style={{zIndex:1}}>
+    <Draggable handle=".handle" nodeRef={data.dragRef} defaultPosition={{x: data.offset + offSetLocal, y: 0}}>
+      <Card sx={{ maxWidth: maxWidthCards, bgcolor: lightGreen[600], position:'absolute'}}>
+        <CardHeader
+          action={
+            <div>
+              <StyledIconButton size="small">
+                {isActive ? <ExpandLess /> : <ExpandMore />}
+              </StyledIconButton>
+              <StyledIconButton size="small" className="handle" ref={data.dragRef} style={{cursor:'grab'}}>
+                <OpenWith />
+              </StyledIconButton>
+            </div>
+          }
+          titleTypographyProps={{variant:"h1",color: 'white',fontSize: '1.5rem', marginRight:'10px'}}
+          title={label}
+        >
+        </CardHeader>
+      </Card>
+    </Draggable>
+    </div>
+  );
+}
+
+
+
+
+
 
 function App() {
 
@@ -112,8 +173,6 @@ function App() {
       }
     )
   },[])
-
-  //<IconButton aria-label="move" className="handle"> <Draggable handle=".handle">
 
   // Helper functions 
   /// Toogle Card expand
@@ -156,14 +215,38 @@ function App() {
   const allCards = useMemo(() => { 
     if(data === undefined) return []
     
-    var parentDict = "activities_gear_dictionary"
-    // Get activities dictionary
-    const activities = Object.entries(data[parentDict]);
-    console.log(data[parentDict]["Dayhikes"])
-  
-    return activities.map(([name,activity], index) => (
+    const allData = Object.entries(data)
+
+    var offset = 0
+    var cardsNumber = 0;
+    return allData.map((object, index) => {
+      offset += cardsNumber * (maxWidthCards+15) 
+      
+      if(object[0] === "activities_gear_dictionary" || object[0] === 'substitutes'){
+        cardsNumber = Object.keys(object[1]).length
+        return (
+          <div>
+          {CardParents({label:object[0].replace(/_/g, ' '), dragRef, offset: offset, isActive:openCards.includes(object[0]), cardsNumber})}
+          {Object.entries(object[1]).map(([name,value], indexChild) => {
+              return CardNode({ label: name, active: value, isActive : openCards.includes(name), parentDict: object[0], index: indexChild, offset:offset, dragRef, contextRef, toggleCard, contextSetDeleteParameters, handleAddItem})
+            })
+          }
+          </div>
+        )
+      }
+      
+      cardsNumber = 1; 
+      return (
+        <div>
+          {CardNodeNumbers({label:object[0].replace(/_/g, ' '), dragRef, offset: offset, isActive:openCards.includes(object[0]), cardsNumber})}
+        </div>
+      )
+    });
+
+
+    /*return activities.map(([name,activity], index) => (
       CardNode({ label: name, active: activity, isActive : openCards.includes(name), toggleCard, dragRef, index, contextSetDeleteParameters, parentDict, contextRef, handleAddItem})
-    ));
+    ));*/
   },[data, openCards]); 
 
   
