@@ -31,6 +31,7 @@ function CardNode(data) {
   //const yPos = maxHeightCards * index
   var inputRef = ''
   const autocompleteData = data.all_gear_names.filter( gearName => active.includes(gearName) === false)
+  const dataSize = active.length
 
   const handleButtonClick = () => {
     var error = ""
@@ -61,9 +62,10 @@ function CardNode(data) {
   
 
   return (
-    <div id={label} key={label} style={{zIndex:1}}>
-      <Draggable handle=".handle" nodeRef={data.dragRef} defaultPosition={{x: xPos, y: 150}}>
+    <div id={label} key={data.mountKey} style={{zIndex:1}}>
+      <Draggable handle=".handle" nodeRef={data.dragRef} defaultPosition={{x: xPos, y: 200}}>
       <Card sx={{ maxWidth: maxWidthCards, bgcolor: lightGreen[600], position:'absolute'}}>
+      <div onContextMenu={(event) => onRightClick(event, label)}>
         <CardHeader
           action={
             <div>
@@ -79,6 +81,8 @@ function CardNode(data) {
           title={label}
         >
         </CardHeader>
+      </div>
+        
         <Divider/>
         <Collapse in={isActive} timeout="auto" unmountOnExit>
 
@@ -98,9 +102,9 @@ function CardNode(data) {
                 <StyledIconButton size="small" sx={{marginTop:'5px', marginRight:'10px'}} onClick={handleButtonClick}>
                   <Add />
                 </StyledIconButton>
-                <Autocomplete id={label} freeSolo options={autocompleteData} 
+                <Autocomplete id={label} freeSolo options={autocompleteData} key={dataSize}
                   renderInput={(params) => 
-                    <TextField {...params} variant="standard" sx={{input:{color:'white'}}} value={inputRef.value} inputRef={(input) => (inputRef = input)}/>
+                    <TextField {...params} variant="standard" sx={{input:{color:'white'}}} inputRef={(input) => (inputRef = input)}/>
                   }
                 />
               </div>
@@ -131,6 +135,7 @@ function CardParents(data){
     const handleButtonClick = () => {
       var error = ""
       var itemName = inputRef.value
+      itemName = itemName[0].toUpperCase() + itemName.slice(1)
       var itemPrice = inputrefnum.value
       if(itemName === ''){
         error += "Missing item name\n"
@@ -152,7 +157,6 @@ function CardParents(data){
 
 
       if(error === ''){
-        itemName = itemName[0].toUpperCase() + itemName.slice(1)
         data.handleAddItemDict(itemName, parseInt(itemPrice), data.parentDict)
         inputRef.value = ''
         inputrefnum.value = ''
@@ -196,13 +200,53 @@ function CardParents(data){
     )
   } 
 
+  function nodeDraw(){
+    const handleButtonClick = () => {
+      var error = ""
+      var itemName = inputRef.value
+      itemName = itemName[0].toUpperCase() + itemName.slice(1)
+      
+      if(data.all_activity_names.includes(itemName)){
+        error += "Activity or substitute already exists\n"
+      }
+
+      if(error === ''){
+        data.handleAddItemActivity(itemName, data.parentDict)
+        inputRef.value = ''
+      } else {
+        alert(error)
+      }
+    };
+
+    return (
+      <div id={label} key={label}>
+      <Divider/>
+      <Collapse in={isActive} timeout="auto" unmountOnExit>
+        <CardContent sx={{bgcolor: lightGreen[500],padding: '8px'}}>
+          <Typography variant="body1" component={'span'} gutterBottom={false} sx={{ color: 'white', fontSize: '1.2rem', fontWeight: '400'}}>
+            <div>
+              <StyledIconButton size="small" sx={{marginTop:'5px', marginRight:'10px'}} onClick={handleButtonClick}>
+                <Add />
+              </StyledIconButton>
+              
+              <Input label="Outlined" variant="outlined" sx={{color:'white', flex:1}} inputRef={(input) => (inputRef = input)}/>
+            </div>
+          </Typography>
+        </CardContent>
+      </Collapse> 
+      </div>
+    )
+  }
+
   if (label === "all gear" || label === "rewards"){
     dictDraw = true
     writeDict = dictionaryDraw()
+  } else {
+    writeDict = nodeDraw()
   }
 
   return(
-    <div id={label} key={label} style={{zIndex:1}}>
+    <div id={label} key={data.mountKey} style={{zIndex:1}}>
     <Draggable handle=".handle" nodeRef={data.dragRef} defaultPosition={{x: data.offset + offSetLocal, y: 0}}>
       <Card sx={{ maxWidth: maxWidthCards, bgcolor: lightGreen[600], position:'absolute'}}>
         <CardHeader
@@ -220,7 +264,7 @@ function CardParents(data){
           title={label}
         >
         </CardHeader>
-        {dictDraw ? writeDict : <div></div>}
+        {dictDraw ? writeDict : writeDict}
       </Card>
     </Draggable>
     </div>
@@ -242,6 +286,7 @@ function App() {
   const contextRef = useRef(null)
   const contextItems = [{label: 'Remove', command: () => handleRemoveItem()}]
   const [contextHandle, setContextHandle] = useState()
+  const [mountKey, setMountKey] = useState(0)
 
   // Load JSON file
   useEffect (() => {
@@ -282,10 +327,12 @@ function App() {
     );
   };
 
+  // Set right click delete parameters
   const contextSetDeleteParameters = (id, parent,label) => {
     setContextHandle({id: id, parent:parent, label:label})
   };
 
+  // In the case of dictionaries
   const contextSetDeleteParametersDict = (id, parent) => {
     setContextHandle({id: id, parent:parent, label:''})
   };
@@ -312,11 +359,27 @@ function App() {
       } 
     }))
   };
+  const handleAddItemActivity = (itemName, parentName) => {
+    setMountKey(mountKey => mountKey + 1)
+    setData(data => ({
+      ...data, 
+      [parentName]: {
+        ...data[parentName], [itemName]:[]
+      } 
+    }))
+  };
+  
 
   // Handle button click to update the data, Remove input
   const handleRemoveItem = debounce(() => { //debounce to prevent double deletion with a 100 ms delay, using contextHandle 
     if(contextHandle.label === ''){
       handleRemoveItemDict()
+      return;
+    }
+
+    if(contextHandle.label === contextHandle.id){
+      handleRemoveItemDict()
+      setMountKey(mountKey => mountKey + 1)
       return;
     }
 
@@ -329,6 +392,7 @@ function App() {
     }))
   },100);
 
+  // Remove items from dictionaries
   const handleRemoveItemDict = () => { 
     if(contextHandle.parent === 'all_gear'){
       checkAndDelete()
@@ -342,10 +406,12 @@ function App() {
       };
     })
   };
+  
 
-  const checkAndDelete = () => { // Upon deleting gear delete it from all activities 
-    ["activities_gear_dictionary", "substitutes"].map(name =>{
-      Object.keys(data[name]).map(childName => {
+  // Upon deleting gear delete it from all activities 
+  const checkAndDelete = () => { 
+    ["activities_gear_dictionary", "substitutes"].map(name => (
+      Object.keys(data[name]).map(childName => (
         setData(data => ({
           ...data, 
           [name]: {
@@ -353,8 +419,8 @@ function App() {
             [childName]: [...data[name][childName]].filter(keys => keys !== contextHandle.id)      
           }
         }))
-      })
-    })
+      ))
+    ))
   };
   
 
@@ -368,10 +434,12 @@ function App() {
 
     var offset = 0
     var cardsNumber = 0;
+    console.log(data.activities_gear_dictionary)
 
     return allData.map((object, index) => {
       offset += cardsNumber * (maxWidthCards+15) 
       const parentName = object[0]
+      console.log(offset, cardsNumber)
       
       if(parentName === "activities_gear_dictionary" || parentName === 'substitutes'){
         cardsNumber = Object.keys(object[1]).length
@@ -379,10 +447,10 @@ function App() {
         const drawChildren = openCards.includes(label)
         return (
           <div>
-          {CardParents({label:label, dragRef, offset: offset, isActive:drawChildren, cardsNumber, toggleCard})}
+          {CardParents({label:label, dragRef, offset: offset, isActive:drawChildren,parentDict: parentName, mountKey, cardsNumber,all_activity_names, toggleCard, handleAddItemActivity})}
           {Object.entries(object[1]).map(([name,value], indexChild) => (
               <div key={indexChild}>
-                {CardNode({ label: name, active: value, isActive : openCards.includes(name), parentDict: parentName, index: indexChild, offset:offset, dragRef, contextRef, all_gear_names, toggleCard, contextSetDeleteParameters, handleAddItem})}
+                {CardNode({ label: name, active: value, isActive : openCards.includes(name), parentDict: parentName, index: indexChild, offset:offset,mountKey, dragRef, contextRef, all_gear_names, toggleCard, contextSetDeleteParameters, handleAddItem})}
                 
               </div>
             ))
@@ -397,7 +465,7 @@ function App() {
 
         return (
         <div>
-          {CardParents({label:name, offset: offset, isActive:openCards.includes(name), parentDict: parentName, cardsNumber, dict:object[1], dragRef, contextRef, all_activity_names, toggleCard, handleAddItemDict, contextSetDeleteParametersDict})}
+          {CardParents({label:name, offset: offset, isActive:openCards.includes(name), parentDict: parentName, cardsNumber, dict:object[1],mountKey, dragRef, contextRef, all_activity_names, toggleCard, handleAddItemDict, contextSetDeleteParametersDict})}
         </div>
         )
       }
@@ -408,11 +476,7 @@ function App() {
       )
     });
 
-
-    /*return activities.map(([name,activity], index) => (
-      CardNode({ label: name, active: activity, isActive : openCards.includes(name), toggleCard, dragRef, index, contextSetDeleteParameters, parentDict, contextRef, handleAddItem})
-    ));*/
-  },[data, openCards]); 
+  },[data, openCards, mountKey]); 
 
   
 
