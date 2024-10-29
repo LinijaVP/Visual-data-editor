@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Editor</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app">
+        <div>
+            <h1>Data Editor</h1>
+            <textarea v-model="jsonContent" rows="20" cols="100"></textarea>
+            <br>
+            <button @click="saveJson">Save</button>
+            <button @click="saveAsJson">Save as</button>
+        </div>
+
+        <br>
+
+        
+
+    </div>
+
+    <script>
+        new Vue({
+            el: '#app',
+            data: {
+                jsonContent: '',
+            },
+            mounted() {
+                this.loadJson();
+            },
+            watch: {
+                
+            },
+            methods: {
+                // Load json data
+                loadJson() {
+                    fetch('/load_json')
+                        .then(response => response.json())
+                        .then(data => {
+                            this.jsonContent = JSON.stringify(data, null, 4);
+                        });
+                },
+                // Save json data to file
+                saveJson() {
+                    try {
+                        const data = JSON.parse(this.jsonContent);
+                        fetch('/save_json', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(data)
+                        })
+                        .then(response => response.json())
+                        .then(result => {
+                            alert('JSON saved successfully!');
+                        });
+                    } catch (error) {
+                        alert('Invalid JSON format');
+                    }
+                },
+                // Save as json data to file
+                saveAsJson() {
+                    try {
+                        const data = JSON.parse(this.jsonContent);
+                        const blob = new Blob([JSON.stringify(data, null, 4)], { type: 'application/json' });
+                        const url = URL.createObjectURL(blob);
+
+                        // Create a temporary link element to trigger the download
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = this.filename || 'data.json'; 
+                        link.style.display = 'none'; // Ensure it doesn't affect layout
+                        document.body.appendChild(link);
+                        link.click();
+
+                        // Clean up
+                        document.body.removeChild(link);
+                        URL.revokeObjectURL(url);
+                    } catch (error) {
+                        alert('Invalid JSON format');
+                    }
+                }
+
+            }
+        });
+    </script>
+</body>
+</html>

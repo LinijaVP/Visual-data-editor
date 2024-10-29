@@ -2,7 +2,7 @@ import React, {useState, useEffect, useMemo, useRef} from 'react'
 import { Card, CardContent, CardHeader, Typography, IconButton, Collapse, Divider, Input, Box, Autocomplete, TextField, Button} from '@mui/material';
 import { OpenWith, ExpandMore, ExpandLess, Add } from "@mui/icons-material";
 //import Add from "@mui/icons-material/Add";
-import { lightGreen } from '@mui/material/colors';
+import { lightGreen, green, lightBlue, blue } from '@mui/material/colors';
 import { styled } from '@mui/material/styles';
 import Draggable from 'react-draggable';
 import { Space, NoPanArea } from 'react-zoomable-ui';
@@ -22,16 +22,32 @@ const SaveButton = ({onSave}) => {
   );
 };
 
+// Save button
+const OpenButton = ({onOpen}) => {
+  return (
+    <Button variant="contained" color="primary" style={{ position: 'fixed', bottom: '20px', left: '20px', zIndex: 3}}>
+    <Input type="file" accept=".json" onChange={onOpen} />
+    </Button>
+    
+  );
+};
+
 // Cards
 function CardNode(data) {
   const label = data.label
   const active = data.active
   const isActive = data.isActive
   const xPos = (maxWidthCards+15) * data.index + data.offset
-  //const yPos = maxHeightCards * index
   var inputRef = ''
   const autocompleteData = data.all_gear_names.filter( gearName => active.includes(gearName) === false)
   const dataSize = active.length
+  var color1; var color2;
+
+  //Set Colors
+  if(data.colorIndex === 0) {color1 = lightGreen[600]; color2 = lightGreen[500]} 
+  else if (data.colorIndex === 1) {color1 = green[700]; color2 = green[600]}
+  else if (data.colorIndex === 2) {color1 = lightBlue[600]; color2 = lightBlue[500]}
+  else if (data.colorIndex === 3) {color1 = blue[700]; color2 = blue[600]}
 
   const handleButtonClick = () => {
     var error = ""
@@ -64,7 +80,7 @@ function CardNode(data) {
   return (
     <div id={label} key={data.mountKey} style={{zIndex:1}}>
       <Draggable handle=".handle" nodeRef={data.dragRef} defaultPosition={{x: xPos, y: 200}}>
-      <Card sx={{ maxWidth: maxWidthCards, bgcolor: lightGreen[600], position:'absolute'}}>
+      <Card sx={{ maxWidth: maxWidthCards, bgcolor: color1, position:'absolute'}}>
       <div onContextMenu={(event) => onRightClick(event, label)}>
         <CardHeader
           action={
@@ -87,7 +103,7 @@ function CardNode(data) {
         <Collapse in={isActive} timeout="auto" unmountOnExit>
 
 
-          <CardContent sx={{bgcolor: lightGreen[500],padding: '8px'}}>
+          <CardContent sx={{bgcolor: color2,padding: '8px'}}>
             <Typography variant="body1" component={'span'} gutterBottom={false} sx={{ color: 'white', fontSize: '1.2rem', fontWeight: '400'}}>
               {active.map((activity,index) =>(
                 <div key={index}>
@@ -123,12 +139,18 @@ function CardNode(data) {
 function CardParents(data){
   const label = data.label;
   const isActive = data.isActive;
-  const offSetLocal = Math.floor(data.cardsNumber/2)* maxWidthCards
+  const offSetLocal = Math.floor(data.cardsNumber/2)* (maxWidthCards+15) - (data.cardsNumber+1)%2*(maxWidthCards+15)/2
   var dictDraw = false
   var inputRef = ''
   var inputrefnum = ''
   var writeDict = <div></div>;
-
+  var color1; var color2;
+  
+  //Set Colors
+  if(data.colorIndex === 0) {color1 = lightGreen[600]; color2 = lightGreen[500]} 
+  else if (data.colorIndex === 1) {color1 = green[700]; color2 = green[600]}
+  else if (data.colorIndex === 2) {color1 = lightBlue[600]; color2 = lightBlue[500]}
+  else if (data.colorIndex === 3) {color1 = blue[700]; color2 = blue[600]}
 
   function dictionaryDraw (){
 
@@ -143,7 +165,7 @@ function CardParents(data){
       if(Object.keys(data.dict).includes(itemName)){
         error += "Item is already included\n"
       }
-      if(label === "rewards"){
+      if(label === "Rewards"){
         if(data.all_activity_names.includes(itemName) ===false){
           error += "Activity doesn't exist\n"
         }
@@ -174,7 +196,7 @@ function CardParents(data){
       <div id={label} key={label}>
       <Divider/>
       <Collapse in={isActive} timeout="auto" unmountOnExit>
-        <CardContent sx={{bgcolor: lightGreen[500],padding: '8px'}}>
+        <CardContent sx={{bgcolor: color2,padding: '8px'}}>
           <Typography variant="body1" component={'span'} gutterBottom={false} sx={{ color: 'white', fontSize: '1.2rem', fontWeight: '400'}}>
             {Object.keys(data.dict).map(key => (
               <div key={key}>
@@ -222,7 +244,7 @@ function CardParents(data){
       <div id={label} key={label}>
       <Divider/>
       <Collapse in={isActive} timeout="auto" unmountOnExit>
-        <CardContent sx={{bgcolor: lightGreen[500],padding: '8px'}}>
+        <CardContent sx={{bgcolor: color2,padding: '8px'}}>
           <Typography variant="body1" component={'span'} gutterBottom={false} sx={{ color: 'white', fontSize: '1.2rem', fontWeight: '400'}}>
             <div>
               <StyledIconButton size="small" sx={{marginTop:'5px', marginRight:'10px'}} onClick={handleButtonClick}>
@@ -238,7 +260,7 @@ function CardParents(data){
     )
   }
 
-  if (label === "all gear" || label === "rewards"){
+  if (label === "All gear" || label === "Rewards"){
     dictDraw = true
     writeDict = dictionaryDraw()
   } else {
@@ -248,7 +270,7 @@ function CardParents(data){
   return(
     <div id={label} key={data.mountKey} style={{zIndex:1}}>
     <Draggable handle=".handle" nodeRef={data.dragRef} defaultPosition={{x: data.offset + offSetLocal, y: 0}}>
-      <Card sx={{ maxWidth: maxWidthCards, bgcolor: lightGreen[600], position:'absolute'}}>
+      <Card sx={{ maxWidth: maxWidthCards, bgcolor: color1, position:'absolute'}}>
         <CardHeader
           action={
             <div>
@@ -318,6 +340,38 @@ function App() {
       console.error('Error saving data:', error);
     }
   };
+
+  // Open json file
+  const handleOpen = async (event) => {
+    const file = event.target.files[0];
+    if (file && file.name.endsWith(".json")) {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        try {
+          const response = await fetch("/upload_json", {
+            method: "POST",
+            headers: {},
+            body: formData,
+          });
+
+          if (!response.ok) {
+            throw new Error(`Error: ${response.statusText}`);
+          }
+
+          const data = await response.json();
+
+          setData(data.data);  
+
+          setMountKey(mountKey => mountKey + 1)
+
+        } catch (error) {
+            console.error("Error uploading file:", error);
+        }
+    } else {
+        alert("Please select a valid JSON file");
+    }
+};
 
   // Helper functions 
   /// Toogle Card expand
@@ -434,23 +488,23 @@ function App() {
 
     var offset = 0
     var cardsNumber = 0;
-    console.log(data.activities_gear_dictionary)
 
     return allData.map((object, index) => {
       offset += cardsNumber * (maxWidthCards+15) 
       const parentName = object[0]
-      console.log(offset, cardsNumber)
       
       if(parentName === "activities_gear_dictionary" || parentName === 'substitutes'){
         cardsNumber = Object.keys(object[1]).length
-        const label = parentName.replace(/_/g, ' ')
+        var label = parentName.replace(/_/g, ' ')
+        label = label[0].toUpperCase() + label.slice(1)
+
         const drawChildren = openCards.includes(label)
         return (
           <div>
-          {CardParents({label:label, dragRef, offset: offset, isActive:drawChildren,parentDict: parentName, mountKey, cardsNumber,all_activity_names, toggleCard, handleAddItemActivity})}
+          {CardParents({label:label, dragRef, offset: offset, isActive:drawChildren,parentDict: parentName, colorIndex:index, mountKey, cardsNumber,all_activity_names, toggleCard, handleAddItemActivity})}
           {Object.entries(object[1]).map(([name,value], indexChild) => (
               <div key={indexChild}>
-                {CardNode({ label: name, active: value, isActive : openCards.includes(name), parentDict: parentName, index: indexChild, offset:offset,mountKey, dragRef, contextRef, all_gear_names, toggleCard, contextSetDeleteParameters, handleAddItem})}
+                {CardNode({ label: name, active: value, isActive : openCards.includes(name), parentDict: parentName, index: indexChild, colorIndex:index, offset:offset,mountKey, dragRef, contextRef, all_gear_names, toggleCard, contextSetDeleteParameters, handleAddItem})}
                 
               </div>
             ))
@@ -461,11 +515,11 @@ function App() {
       } 
       else if (parentName === "all_gear" || parentName === "rewards") {
         cardsNumber = 1;
-        const name = parentName.replace(/_/g, ' ')
-
+        var name = parentName.replace(/_/g, ' ')
+        name = name[0].toUpperCase() + name.slice(1)
         return (
         <div>
-          {CardParents({label:name, offset: offset, isActive:openCards.includes(name), parentDict: parentName, cardsNumber, dict:object[1],mountKey, dragRef, contextRef, all_activity_names, toggleCard, handleAddItemDict, contextSetDeleteParametersDict})}
+          {CardParents({label:name, offset: offset, isActive:openCards.includes(name), parentDict: parentName, cardsNumber, dict:object[1],mountKey, colorIndex: index, dragRef, contextRef, all_activity_names, toggleCard, handleAddItemDict, contextSetDeleteParametersDict})}
         </div>
         )
       }
@@ -497,7 +551,7 @@ function App() {
     </Draggable>
     </NoPanArea>
     </Space>
-    <SaveButton onSave={handleSave}/>
+    <OpenButton onOpen={handleOpen}/><SaveButton onSave={handleSave}/>
     </div>
   )
 }

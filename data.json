@@ -1,0 +1,19 @@
+{
+    "activities_gear_dictionary": {
+        "Example activity": [
+            "item"
+        ]
+        
+    },
+    "all_gear": {
+        "item": 20
+    },
+    "rewards": {
+        "Example activity": 3
+    },
+    "substitutes": {
+        "Example": [
+            "item"
+        ]
+    }
+}
