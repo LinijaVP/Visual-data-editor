@@ -312,14 +312,14 @@ function App() {
 
   // Load JSON file
   useEffect (() => {
-    fetch("/load_json").then(
+    fetch("/Visual-data-editor/data.json").then(
       res => res.json()
     ).then(
       data => {
         setData(data)
         setLoading(false)
       }
-    )
+    ).catch((error) => console.error("Error fetching JSON:", error));
   },[])
 
   // Save as function for the data
@@ -344,32 +344,21 @@ function App() {
   // Open json file
   const handleOpen = async (event) => {
     const file = event.target.files[0];
-    if (file && file.name.endsWith(".json")) {
-        const formData = new FormData();
-        formData.append("file", file);
-
+    if (file && file.type === "application/json") {
+      const reader = new FileReader();
+      reader.onload = (e) => {
         try {
-          const response = await fetch("/upload_json", {
-            method: "POST",
-            headers: {},
-            body: formData,
-          });
-
-          if (!response.ok) {
-            throw new Error(`Error: ${response.statusText}`);
-          }
-
-          const data = await response.json();
-
-          setData(data.data);  
+          const data = JSON.parse(e.target.result);
+          setData(data);
 
           setMountKey(mountKey => mountKey + 1)
-
         } catch (error) {
-            console.error("Error uploading file:", error);
+          console.error("Invalid JSON file.");
         }
+      };
+      reader.readAsText(file);
     } else {
-        alert("Please select a valid JSON file");
+      console.error("Please upload a valid JSON file.");
     }
 };
 
