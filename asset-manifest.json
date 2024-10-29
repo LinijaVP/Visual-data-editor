@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/Visual-data-editor/static/css/main.af2227fd.css",
+    "main.js": "/Visual-data-editor/static/js/main.1f2896fa.js",
+    "static/js/453.ed5b7207.chunk.js": "/Visual-data-editor/static/js/453.ed5b7207.chunk.js",
+    "index.html": "/Visual-data-editor/index.html",
+    "main.af2227fd.css.map": "/Visual-data-editor/static/css/main.af2227fd.css.map",
+    "main.1f2896fa.js.map": "/Visual-data-editor/static/js/main.1f2896fa.js.map",
+    "453.ed5b7207.chunk.js.map": "/Visual-data-editor/static/js/453.ed5b7207.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.af2227fd.css",
+    "static/js/main.1f2896fa.js"
+  ]
+}
